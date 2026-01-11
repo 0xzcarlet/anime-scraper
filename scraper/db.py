@@ -68,14 +68,28 @@ class Database:
     def upsert_downloads(self, anime_id: int, downloads: Iterable[AnimeDownload]) -> None:
         delete_query = "DELETE FROM anime_download WHERE anime_id=%s"
         insert_query = (
-            "INSERT INTO anime_download (anime_id, label, url) VALUES (%s, %s, %s)"
+            "INSERT INTO anime_download "
+            "(anime_id, source_url, section_title, format, resolution, size, provider, url) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
         )
         with self.connection() as conn:
             cur = conn.cursor()
             cur.execute(delete_query, (anime_id,))
             cur.executemany(
                 insert_query,
-                [(anime_id, download.label, download.url) for download in downloads],
+                [
+                    (
+                        anime_id,
+                        download.source_url,
+                        download.section_title,
+                        download.format,
+                        download.resolution,
+                        download.size,
+                        download.provider,
+                        download.url,
+                    )
+                    for download in downloads
+                ],
             )
 
     def upsert_image(self, anime_id: int, image: AnimeImage) -> None:

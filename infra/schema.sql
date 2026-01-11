@@ -17,10 +17,15 @@ CREATE TABLE IF NOT EXISTS anime (
 CREATE TABLE IF NOT EXISTS anime_download (
     id INT AUTO_INCREMENT PRIMARY KEY,
     anime_id INT NOT NULL,
-    label VARCHAR(255) NOT NULL,
+    source_url VARCHAR(512) NOT NULL,
+    section_title VARCHAR(255) NULL,
+    format VARCHAR(50) NULL,
+    resolution VARCHAR(50) NULL,
+    size VARCHAR(50) NULL,
+    provider VARCHAR(255) NULL,
     url VARCHAR(1024) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uniq_anime_download (anime_id, label, url),
+    UNIQUE KEY uniq_anime_download (anime_id, source_url, format, resolution, provider, url),
     CONSTRAINT fk_anime_download_anime_id FOREIGN KEY (anime_id) REFERENCES anime(id) ON DELETE CASCADE
 );
 

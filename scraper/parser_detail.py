@@ -77,7 +77,85 @@ def _collect_downloads(soup: BeautifulSoup, base_url: str) -> List[Tuple[str, st
     return downloads
 
 
-def parse_anime_detail(html: str, base_url: str) -> Tuple[str, str, Optional[str], Optional[str], Optional[str], Optional[str], List[Tuple[str, str]]]:
+def _collect_download_pages(soup: BeautifulSoup, base_url: str) -> List[str]:
+    pages: List[str] = []
+    seen = set()
+    for link in soup.select("a[href]"):
+        href = link.get("href")
+        if not href:
+            continue
+        if "/batch/" not in href and "/episode/" not in href:
+            continue
+        absolute_url = urljoin(base_url, href)
+        if absolute_url in seen:
+            continue
+        seen.add(absolute_url)
+        pages.append(absolute_url)
+    return pages
+
+
+def _parse_format_resolution(text: str) -> Tuple[Optional[str], Optional[str]]:
+    format_value = None
+    resolution_value = None
+    format_match = re.search(r"\b(mp4|mkv|avi|flv|webm|3gp)\b", text, re.IGNORECASE)
+    if format_match:
+        format_value = format_match.group(1).upper()
+    resolution_match = re.search(r"\b\d{3,4}p\b", text, re.IGNORECASE)
+    if resolution_match:
+        resolution_value = resolution_match.group(0)
+    return format_value, resolution_value
+
+
+def _parse_size(text: str) -> Optional[str]:
+    size_match = re.search(r"\b\d+(?:\.\d+)?\s*(?:GB|MB)\b", text, re.IGNORECASE)
+    if size_match:
+        return size_match.group(0)
+    return None
+
+
+def parse_download_page(
+    html: str,
+    base_url: str,
+) -> List[Tuple[Optional[str], Optional[str], Optional[str], Optional[str], str, str]]:
+    soup = BeautifulSoup(html, "html.parser")
+    downloads: List[Tuple[Optional[str], Optional[str], Optional[str], Optional[str], str, str]] = []
+    seen = set()
+    for table in soup.select("table"):
+        if not table.select("a[href]"):
+            continue
+        heading = table.find_previous(["h4", "h3", "h2", "h1"])
+        section_title = heading.get_text(" ", strip=True) if heading else None
+        for row in table.select("tr"):
+            links = row.select("a[href]")
+            if not links:
+                continue
+            row_text = row.get_text(" ", strip=True)
+            format_value, resolution_value = _parse_format_resolution(row_text)
+            size_value = _parse_size(row_text)
+            for link in links:
+                href = link.get("href")
+                if not href:
+                    continue
+                absolute_url = urljoin(base_url, href)
+                provider = _normalize_label(link, absolute_url)
+                key = (section_title, format_value, resolution_value, size_value, provider, absolute_url)
+                if key in seen:
+                    continue
+                seen.add(key)
+                downloads.append((section_title, format_value, resolution_value, size_value, provider, absolute_url))
+    return downloads
+
+
+def parse_anime_detail(html: str, base_url: str) -> Tuple[
+    str,
+    str,
+    Optional[str],
+    Optional[str],
+    Optional[str],
+    Optional[str],
+    List[Tuple[str, str]],
+    List[str],
+]:
     soup = BeautifulSoup(html, "html.parser")
     title = _text_or_none(soup.select_one("h1")) or _text_or_none(
         soup.select_one(".infox h1")
@@ -105,5 +183,15 @@ def parse_anime_detail(html: str, base_url: str) -> Tuple[str, str, Optional[str
     if poster_img and poster_img.get("src"):
         poster_url = urljoin(base_url, poster_img["src"])
     downloads = _collect_downloads(soup, base_url)
+    download_pages = _collect_download_pages(soup, base_url)
     title_value = title or "Unknown"
-    return title_value, synopsis, ", ".join(genres) if genres else None, status, anime_type, poster_url, downloads
+    return (
+        title_value,
+        synopsis,
+        ", ".join(genres) if genres else None,
+        status,
+        anime_type,
+        poster_url,
+        downloads,
+        download_pages,
+    )
