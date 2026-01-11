@@ -8,7 +8,7 @@ from scraper.db import Database
 from scraper.fetcher import Fetcher
 from scraper.image_pipeline import process_image
 from scraper.models import Anime, AnimeDownload, AnimeImage
-from scraper.parser_detail import extract_download_page_urls, parse_anime_detail, parse_download_page
+from scraper.parser_detail import parse_anime_detail
 from scraper.utils import hash_values, slugify
 
 LOGGER = logging.getLogger(__name__)
@@ -38,20 +38,6 @@ class Updater:
             return
         html = self._fetcher.fetch_html(url)
         title, synopsis, genres, status, anime_type, poster_url, downloads = parse_anime_detail(html, url)
-        download_pages = extract_download_page_urls(html, url)
-        for page_url in download_pages:
-            page_html = self._fetcher.fetch_html(page_url, use_js=True)
-            downloads.extend(parse_download_page(page_html, page_url))
-        if downloads:
-            unique_downloads = []
-            seen = set()
-            for label, link in downloads:
-                key = (label, link)
-                if key in seen:
-                    continue
-                seen.add(key)
-                unique_downloads.append((label, link))
-            downloads = unique_downloads
         download_hash = hash_values([link for _, link in downloads])
         if daily_mode and existing and existing.detail_hash == download_hash:
             LOGGER.info("No change detected for %s", slug)
