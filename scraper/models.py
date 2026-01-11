@@ -18,7 +18,12 @@ class Anime:
 
 @dataclass
 class AnimeDownload:
-    label: str
+    source_url: str
+    section_title: Optional[str]
+    format: Optional[str]
+    resolution: Optional[str]
+    size: Optional[str]
+    provider: Optional[str]
     url: str
 
 
