@@ -16,7 +16,7 @@ Scraper untuk **otakudesu.best** yang mengambil daftar anime, detail anime, dan 
 
 - Python 3.11+
 - MySQL
-- Schema sudah tersedia di `infra/schema.sql`
+- Schema sudah tersedia di `../infra/schema.sql`
 
 ## Konfigurasi Environment
 
@@ -36,10 +36,10 @@ REQUEST_TIMEOUT=15
 
 ## Setup Database (via docker compose infra)
 
-Contoh menjalankan MySQL dengan docker compose yang ada di folder `infra`:
+Contoh menjalankan MySQL dengan docker compose yang ada di folder infra:
 
 ```bash
-cd infra
+cd ../infra
 # pastikan schema.sql sudah ter-mount dan di-apply sesuai instruksi infra
 # contoh: docker compose up -d
 ```
